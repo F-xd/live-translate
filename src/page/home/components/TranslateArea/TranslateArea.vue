@@ -1,7 +1,7 @@
 <template>
     <div class="chat-area">
         <!-- 翻译内容列表 -->
-        <div class="message-list">
+        <div ref="messageListRef" class="message-list" @scroll="handleScroll">
             <!-- 系统提示 -->
             <div class="system-message" v-if="messages.length === 0">
                 <span class="system-icon">🎤</span>
@@ -25,9 +25,41 @@
 
 <script setup>
 import { ElButton } from 'element-plus';
-import { ref, reactive } from 'vue';
-const messages = reactive(['你好']);
+import { ref, nextTick, reactive } from 'vue';
 
+const messageListRef = ref(null);
+const messages = reactive(['你好']);
+// 是否处于底部状态（用于判断是否需要自动滚动）
+const isAtBottom = ref(true);
+// 底部阈值（距离底部多少像素内认为是在底部）
+const bottomThreshold = 50;
+// 监听滚动事件
+const handleScroll = () => {
+    if (!messageListRef.value) return;
+
+    const { scrollTop, clientHeight, scrollHeight } = messageListRef.value;
+    // 判断是否滚动到底部（允许一定阈值偏差）
+    isAtBottom.value = scrollTop + clientHeight >= scrollHeight - bottomThreshold;
+};
+// 滚动到底部
+const scrollToBottom = () => {
+    nextTick(() => {
+        if (messageListRef.value) {
+            messageListRef.value.scrollTop = messageListRef.value.scrollHeight;
+        }
+    });
+};
+// 添加消息并根据状态决定是否滚动
+const addMessage = (msg) => {
+    messages.push(msg);
+    // 只有当用户已经在底部时才自动滚动
+    if (isAtBottom.value) {
+        scrollToBottom();
+    }
+};
+setInterval(() => {
+    addMessage('你好');
+}, 10000000);
 </script>
 
 <style lang='less' scoped>
