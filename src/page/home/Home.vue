@@ -10,37 +10,18 @@
             </div>
         </div>
         <!-- 内容区域 -->
-        <div class="content">
-            <!-- 聊天区域 -->
-            <div class="chat-area">
-                asdasd
-            </div>
-            <div class="button-container">
-                <ElButton color="#2dd4bf" size="large" round @click="isStart = !isStart">
-                    <Waveform v-if="isStart" />
-                    <template v-else>
-                        <el-icon size="24" color="#1a1a2e">
-                            <Microphone />
-                        </el-icon>
-                        <span color="#1a1a2e">开始翻译</span>
-                    </template>
-                </ElButton>
-            </div>
-        </div>
+        <TranslateArea />
     </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
-import Waveform from './components/Waveform.vue';
-import { ElButton, ElIcon } from 'element-plus';
-const isStart = ref(false);
+import TranslateArea from './components/TranslateArea/TranslateArea.vue';
 </script>
 
 <style lang='less' scoped>
 .home-container {
     width: 100%;
-    height: 100%;
+    height: 100vh;
     background: linear-gradient(135deg, #d1fae5 0%, #ecfeff 50%, #cffafe 100%);
     position: relative;
     overflow: hidden;
@@ -50,34 +31,40 @@ const isStart = ref(false);
 
 .header {
     width: 100%;
-    height: 100px;
+    height: 80px;
     display: flex;
     justify-content: start;
+    align-items: center;
+    padding: 0 32px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
 
     .title-section {
         display: flex;
         align-items: center;
         gap: 16px;
-        margin-left: 24px;
 
         .logo {
             width: 48px;
             height: 48px;
+            background: linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
 
             img {
-                width: 100%;
-                height: 100%;
+                width: 70%;
+                height: 70%;
                 object-fit: cover;
             }
         }
 
-        text-align: center;
-
         .title {
-            font-size: 48px;
+            font-size: 24px;
             font-weight: 700;
             color: #1a1a2e;
-            margin: 0 0 12px 0;
+            margin: 0;
             background: linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -86,22 +73,8 @@ const isStart = ref(false);
     }
 }
 
-.content {
-    width: 100%;
-    height: calc(100% - 100px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 32px;
-}
-
-/* 聊天区域 */
-.chat-area {
-    width: 100%;
-    height: 70%;
-    padding: 24px;
-    display: flex;
-    gap: 24px;
-    position: relative;
+.content :deep(.chat-area) {
+    flex: 1;
+    min-height: 500px;
 }
 </style>

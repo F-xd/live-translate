@@ -16,7 +16,6 @@ const props = defineProps({
         default: 10
     }
 })
-console.log(props.waveNum)
 </script>
 
 <style lang='less' scoped>
