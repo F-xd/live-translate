@@ -31,6 +31,26 @@
         </div>
         <!-- 操作区 -->
         <div class="operation">
+            <!-- 识别语言选择 -->
+            <div class="language-select">
+                <ElSelect v-model="sourceLanguage" placeholder="识别语言" size="large" :disabled="isStarted"
+                    class="lang-select">
+                    <ElOption v-for="lang in languageOptions" :key="lang.code" :label="lang.label" :value="lang.code" />
+                </ElSelect>
+            </div>
+
+            <!-- 箭头分隔 -->
+            <span class="arrow">→</span>
+
+            <!-- 翻译语言选择 -->
+            <div class="language-select">
+                <ElSelect v-model="targetLanguage" placeholder="翻译语言" size="large" :disabled="isStarted"
+                    class="lang-select">
+                    <ElOption v-for="lang in languageOptions" :key="lang.code" :label="lang.label" :value="lang.code" />
+                </ElSelect>
+            </div>
+
+            <!-- 开始按钮 -->
             <ElButton type="primary" size="large" color="#2dd4bf" round @click="handleStart">
                 <ElIcon size="24">
                     <Microphone />
@@ -57,6 +77,22 @@ const isAtBottom = ref(true);
 // 底部阈值（距离底部多少像素内认为是在底部）
 const bottomThreshold = 100;
 
+// 语言选项
+const languageOptions = [
+    { code: 'zh-CN', label: '中文' },
+    { code: 'en-US', label: 'English' },
+    { code: 'ja-JP', label: '日本語' },
+    { code: 'ko-KR', label: '한국어' },
+    { code: 'fr-FR', label: 'Français' },
+    { code: 'de-DE', label: 'Deutsch' },
+    { code: 'es-ES', label: 'Español' },
+    { code: 'ru-RU', label: 'русский' },
+];
+
+// 当前选择的识别语言和翻译语言
+const sourceLanguage = ref('zh-CN');
+const targetLanguage = ref('en-US');
+
 // 创建speechRecognition对象(语音识别)
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -65,8 +101,8 @@ if (!SpeechRecognition) {
 }
 
 const recognition = new SpeechRecognition();
-// 设置识别语言为中文
-recognition.lang = 'zh-CN';
+// 设置识别语言（使用用户选择的语言）
+recognition.lang = sourceLanguage.value;
 // 开启中间结果
 recognition.interimResults = true;
 // 开启连续识别
@@ -204,6 +240,9 @@ const handleStart = () => {
         isStarted.value = false;
         currentTranscript.value = '';
     } else {
+        // 设置识别语言为用户选择的语言
+        recognition.lang = sourceLanguage.value;
+
         // 请求麦克风权限并开始识别
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(() => {
@@ -424,6 +463,24 @@ const addMessage = (msg) => {
         justify-content: center;
         align-items: center;
         padding: 20px;
+        gap: 12px;
+
+        .language-select {
+            .lang-select {
+                width: 120px;
+
+                .el-select__wrapper {
+                    border-radius: 8px;
+                    background: white;
+                }
+            }
+        }
+
+        .arrow {
+            font-size: 18px;
+            color: #666;
+            font-weight: bold;
+        }
     }
 
 }
