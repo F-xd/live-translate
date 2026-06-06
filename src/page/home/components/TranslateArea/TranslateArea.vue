@@ -7,26 +7,11 @@
                 <span class="system-icon">🎤</span>
                 <p>点击下方按钮开始同声传译</p>
             </div>
-
             <!-- 消息列表 -->
-            <div v-for="(msg, index) in messages" :key="index" :class="['message-item', msg.type]">
-                <div class="message-content">
-                    <p>{{ msg.text }}</p>
-                    <span class="message-time">{{ msg.time }}</span>
-                </div>
-            </div>
-
+            <MessageItem v-for="(msg, index) in messages" :key="index" :msg="msg" />
             <!-- 当前正在识别的中间结果 -->
-            <div v-if="currentTranscript" class="message-item user current">
-                <div class="message-content">
-                    <p class="interim-text">{{ currentTranscript }}...</p>
-                    <div class="typing-indicator">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                </div>
-            </div>
+            <MessageItem v-if="currentTranscript" :msg="{ type: 'user', text: currentTranscript, time: '' }"
+                :is-talking="true" />
 
         </div>
         <!-- 操作区 -->
@@ -35,7 +20,8 @@
             <div class="language-select">
                 <ElSelect v-model="sourceLanguage" placeholder="识别语言" size="large" :disabled="isStarted"
                     class="lang-select">
-                    <ElOption v-for="lang in languageOptions" :key="lang.code" :label="lang.label" :value="lang.code" />
+                    <ElOption v-for="lang in LANGUAGE_OPTIONS" :key="lang.code" :label="lang.label"
+                        :value="lang.code" />
                 </ElSelect>
             </div>
 
@@ -46,7 +32,8 @@
             <div class="language-select">
                 <ElSelect v-model="targetLanguage" placeholder="翻译语言" size="large" :disabled="isStarted"
                     class="lang-select">
-                    <ElOption v-for="lang in languageOptions" :key="lang.code" :label="lang.label" :value="lang.code" />
+                    <ElOption v-for="lang in LANGUAGE_OPTIONS" :key="lang.code" :label="lang.label"
+                        :value="lang.code" />
                 </ElSelect>
             </div>
 
@@ -66,6 +53,15 @@
 import { ElButton } from 'element-plus';
 import { ref, nextTick } from 'vue';
 import Waveform from '@/components/Waveform.vue';
+import MessageItem from './MessageItem.vue';
+import {
+    LANGUAGE_OPTIONS,
+    DEFAULT_SOURCE_LANGUAGE,
+    DEFAULT_TARGET_LANGUAGE,
+    SCROLL_CONFIG,
+    MESSAGE_TYPES,
+    RECOGNITION_ERROR_MESSAGES
+} from './constants.js';
 
 const messageListRef = ref(null);
 const messages = ref([]);
@@ -74,24 +70,10 @@ const isStarted = ref(false);
 
 // 是否处于底部状态（用于判断是否需要自动滚动）
 const isAtBottom = ref(true);
-// 底部阈值（距离底部多少像素内认为是在底部）
-const bottomThreshold = 100;
-
-// 语言选项
-const languageOptions = [
-    { code: 'zh-CN', label: '中文' },
-    { code: 'en-US', label: 'English' },
-    { code: 'ja-JP', label: '日本語' },
-    { code: 'ko-KR', label: '한국어' },
-    { code: 'fr-FR', label: 'Français' },
-    { code: 'de-DE', label: 'Deutsch' },
-    { code: 'es-ES', label: 'Español' },
-    { code: 'ru-RU', label: 'русский' },
-];
 
 // 当前选择的识别语言和翻译语言
-const sourceLanguage = ref('zh-CN');
-const targetLanguage = ref('en-US');
+const sourceLanguage = ref(DEFAULT_SOURCE_LANGUAGE);
+const targetLanguage = ref(DEFAULT_TARGET_LANGUAGE);
 
 // 创建speechRecognition对象(语音识别)
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -102,7 +84,7 @@ if (!SpeechRecognition) {
 
 const recognition = new SpeechRecognition();
 // 设置识别语言（使用用户选择的语言）
-recognition.lang = sourceLanguage.value;
+recognition.lang = DEFAULT_SOURCE_LANGUAGE;
 // 开启中间结果
 recognition.interimResults = true;
 // 开启连续识别
@@ -144,7 +126,7 @@ recognition.onresult = (event) => {
     // 如果有最终结果，添加到消息列表
     if (finalTranscript) {
         addMessage({
-            type: 'user',
+            type: MESSAGE_TYPES.USER,
             text: finalTranscript,
             time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
         });
@@ -165,7 +147,7 @@ recognition.onend = () => {
     // 如果还有未完成的中间结果，也要处理
     if (currentTranscript.value.trim()) {
         addMessage({
-            type: 'user',
+            type: MESSAGE_TYPES.USER,
             text: currentTranscript.value.trim(),
             time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
         });
@@ -193,26 +175,10 @@ recognition.onend = () => {
 recognition.onerror = (event) => {
     console.error('语音识别错误:', event.error);
 
-    let errorMessage = '';
-    switch (event.error) {
-        case 'not-allowed':
-            errorMessage = '请允许麦克风访问权限';
-            break;
-        case 'no-speech':
-            errorMessage = '未检测到语音输入，请继续说话';
-            break;
-        case 'network':
-            errorMessage = '网络错误，请检查网络连接';
-            break;
-        case 'aborted':
-            errorMessage = '语音识别已停止';
-            break;
-        default:
-            errorMessage = `识别错误: ${event.error}`;
-    }
+    const errorMessage = RECOGNITION_ERROR_MESSAGES[event.error] || `识别错误: ${event.error}`;
 
     addMessage({
-        type: 'error',
+        type: MESSAGE_TYPES.ERROR,
         text: errorMessage,
         time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
     });
@@ -226,7 +192,7 @@ const translateMessage = (text) => {
     const translatedText = `[翻译] ${text}`; // 临时占位
 
     addMessage({
-        type: 'translated',
+        type: MESSAGE_TYPES.TRANSLATED,
         text: translatedText,
         time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
     });
@@ -264,7 +230,7 @@ const handleScroll = () => {
     if (!messageListRef.value) return;
     const { scrollTop, clientHeight, scrollHeight } = messageListRef.value;
     // 判断是否滚动到底部（允许一定阈值偏差）
-    isAtBottom.value = scrollTop + clientHeight >= scrollHeight - bottomThreshold;
+    isAtBottom.value = scrollTop + clientHeight >= scrollHeight - SCROLL_CONFIG.bottomThreshold;
 };
 
 // 滚动到底部
@@ -323,133 +289,6 @@ const addMessage = (msg) => {
             p {
                 margin: 0;
                 font-size: 14px;
-            }
-        }
-
-        .message-item {
-            max-width: 100%;
-            display: flex;
-
-            &.user {
-                justify-content: flex-end;
-                margin-left: 24px;
-
-                .message-content {
-                    background: linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%);
-                    color: white;
-                    border-radius: 16px 16px 4px 16px;
-
-                    .message-time {
-                        color: rgba(255, 255, 255, 0.7);
-                    }
-                }
-
-                &.current {
-                    animation: pulse 1.5s infinite;
-
-                    .message-content {
-                        opacity: 0.9;
-                    }
-                }
-            }
-
-            &.translated {
-                justify-content: flex-start;
-                margin-right: 24px;
-
-                .message-content {
-                    background: #ecfeff;
-                    color: #0d9488;
-                    border: 1px solid #99f6e4;
-                    border-radius: 16px 16px 16px 4px;
-                }
-            }
-
-            &.error {
-                justify-content: center;
-
-                .message-content {
-                    background: #fef2f2;
-                    color: #dc2626;
-                    border-radius: 8px;
-                    text-align: center;
-                    padding: 8px 16px;
-                }
-            }
-
-            .message-content {
-                display: inline-block;
-                padding: 12px 16px;
-                background: #f1f5f9;
-                color: #333;
-                border-radius: 16px 16px 16px 16px;
-
-                p {
-                    margin: 0 0 6px 0;
-                    line-height: 1.5;
-                    font-size: 14px;
-                    white-space: pre-wrap;
-                    word-break: break-word;
-                }
-
-                .interim-text {
-                    font-style: italic;
-                    opacity: 0.8;
-                }
-
-                .message-time {
-                    display: block;
-                    font-size: 10px;
-                    color: #999;
-                    margin-top: 4px;
-                }
-
-                .typing-indicator {
-                    display: inline-flex;
-                    gap: 4px;
-                    margin-top: 8px;
-
-                    span {
-                        width: 6px;
-                        height: 6px;
-                        background: rgba(255, 255, 255, 0.7);
-                        border-radius: 50%;
-                        animation: bounce 1.4s infinite ease-in-out both;
-
-                        &:nth-child(1) {
-                            animation-delay: -0.32s;
-                        }
-
-                        &:nth-child(2) {
-                            animation-delay: -0.16s;
-                        }
-                    }
-                }
-            }
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.7;
-            }
-        }
-
-        @keyframes bounce {
-
-            0%,
-            80%,
-            100% {
-                transform: scale(0);
-            }
-
-            40% {
-                transform: scale(1);
             }
         }
     }
