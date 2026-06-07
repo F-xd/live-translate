@@ -53,7 +53,7 @@
 import { ElButton } from 'element-plus';
 import { ref, nextTick } from 'vue';
 import Waveform from '@/components/Waveform.vue';
-import MessageItem from './MessageItem.vue';
+import MessageItem from './components/MessageItem.vue';
 import {
     LANGUAGE_OPTIONS,
     DEFAULT_SOURCE_LANGUAGE,
