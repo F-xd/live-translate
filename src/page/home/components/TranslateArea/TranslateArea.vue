@@ -58,7 +58,7 @@ import { ref, nextTick, computed } from 'vue';
 import { ElButton } from 'element-plus';
 import Waveform from '@/components/Waveform.vue';
 import MessageItem from './components/MessageItem.vue';
-import { DEFAULT_SOURCE_LANGUAGE, DEFAULT_TARGET_LANGUAGE, LANGUAGE_OPTIONS } from './constants.js';
+import { translateText, LANGUAGE_NAMES } from '@/utils/xfyun-translate';
 import { SCROLL_CONFIG, MESSAGE_TYPES } from './constants.js';
 import RTASRClient from '@/utils/xfyun-rtasr';
 import { XFYUN_CONFIG } from '@/config/xfyun';
@@ -67,6 +67,22 @@ import { XFYUN_CONFIG } from '@/config/xfyun';
 const hasXFYUNConfig = computed(() => {
     return XFYUN_CONFIG.appId && XFYUN_CONFIG.accessKeyId && XFYUN_CONFIG.accessKeySecret;
 });
+
+// 语言选项
+const LANGUAGE_OPTIONS = [
+    { code: 'autodialect', label: '中英+方言' },
+    { code: 'autominor', label: '37种语种' },
+    { code: 'cn', label: '中文' },
+    { code: 'en', label: '英语' },
+    { code: 'ja', label: '日语' },
+    { code: 'ko', label: '韩语' },
+    { code: 'fr', label: '法语' },
+    { code: 'de', label: '德语' },
+];
+
+// 默认语言
+const DEFAULT_SOURCE_LANGUAGE = 'autodialect';
+const DEFAULT_TARGET_LANGUAGE = 'cn';
 
 const messageListRef = ref(null);
 const messages = ref([]);
@@ -122,10 +138,8 @@ const handleRecognitionResult = (text, isFinal, rawData) => {
                 time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
             });
 
-            // 模拟翻译结果（实际应用中这里应该调用翻译API）
-            setTimeout(() => {
-                translateMessage(text.trim());
-            }, 500);
+            // 调用翻译API
+            translateMessage(text.trim());
         }
 
         // 清空中间结果
@@ -171,16 +185,27 @@ const handleConnectionOpen = () => {
     console.log('RTASR 连接成功');
 };
 
-// 模拟翻译函数（实际应用中需要调用真实的翻译API）
-const translateMessage = (text) => {
-    // 这里模拟翻译结果，实际应该调用翻译API
-    const translatedText = `[翻译] ${text}`;
+// 翻译函数
+const translateMessage = async (text) => {
+    try {
+        // 调用讯飞翻译API
+        const result = await translateText(text, sourceLanguage.value, targetLanguage.value);
 
-    addMessage({
-        type: MESSAGE_TYPES.TRANSLATED,
-        text: translatedText,
-        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-    });
+        addMessage({
+            type: MESSAGE_TYPES.TRANSLATED,
+            text: result.dst,
+            time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        });
+    } catch (error) {
+        console.error('翻译失败:', error);
+
+        // 显示翻译错误消息
+        addMessage({
+            type: MESSAGE_TYPES.ERROR,
+            text: `翻译失败: ${error.message}`,
+            time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        });
+    }
 };
 
 // 开始识别
