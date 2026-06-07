@@ -25,8 +25,18 @@ class RTASRClient {
     this.onOpen = config.onOpen || (() => {});
 
     // 状态
+    // 是否已连接
     this.isConnected = false;
+    // 是否正在录音
     this.isRecording = false;
+    // 音频队列
+    this.audioQueue = [];
+    // 是否正在清除队列
+    this.isClearQueue = false;
+    // 清除队列定时器
+    this.clearQueueTimer = null;
+    // 静音定时器
+    this.muteTimer = null;
   }
 
   /**
@@ -110,9 +120,16 @@ class RTASRClient {
    */
   processResult(result) {
     // 更新会话 ID
-    if (result.msg_type === "action" && result.data?.sessionId) {
+    if (
+      result.msg_type === "action" &&
+      result.data?.sessionId &&
+      result.data?.action === "started"
+    ) {
+      // 会话ID更新
       this.sessionId = result.data.sessionId;
       console.log("【会话ID】", this.sessionId);
+      // 清除队列
+      this.handleClearQueue();
     }
 
     // 处理识别结果
@@ -181,10 +198,6 @@ class RTASRClient {
    * 开始音频采集
    */
   async startRecording() {
-    if (!this.isConnected) {
-      throw new Error("WebSocket 未连接");
-    }
-
     try {
       // 获取麦克风权限
       this.stream = await navigator.mediaDevices.getUserMedia({
@@ -238,10 +251,6 @@ class RTASRClient {
    * 处理音频数据
    */
   handleAudioProcess(event) {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return;
-    }
-
     // 获取音频数据
     const inputBuffer = event.inputBuffer.getChannelData(0);
 
@@ -251,12 +260,6 @@ class RTASRClient {
       sum += inputBuffer[i] * inputBuffer[i];
     }
     const rms = Math.sqrt(sum / inputBuffer.length);
-    console.log("【处理音频数据】", rms);
-
-    // 静音阈值：RMS < 0.01 认为是静音
-    if (rms < 0.01) {
-      return; // 跳过静音数据
-    }
 
     // 将 Float32Array 转换为 Int16Array（16bit PCM）
     const int16Buffer = new Int16Array(inputBuffer.length);
@@ -267,9 +270,46 @@ class RTASRClient {
         Math.min(32767, inputBuffer[i] * 32767),
       );
     }
-
-    // 发送音频数据
-    this.ws.send(int16Buffer.buffer);
+    // 发送音频数据到队列
+    if (this.isClearQueue && rms > 0.001) {
+      this.audioQueue.push(int16Buffer.buffer);
+    }
+    // 静音阈值：RMS < 0.02 认为是静音
+    if (rms < 0.02) {
+      // 启动静音计时器
+      if (!this.muteTimer) {
+        this.muteTimer = setTimeout(() => {
+          // 清除队列定时器并发送结束标识
+          clearInterval(this.clearQueueTimer);
+          this.sendEnd();
+          this.isClearQueue = false;
+        }, 300);
+      }
+    } else {
+      // 清除静音计时器
+      clearTimeout(this.muteTimer);
+      this.muteTimer = null;
+      console.log("【有效音频数据】", rms);
+      // 开始连接ws发送音频数据
+      if (this.isClearQueue) {
+        return;
+      }
+      this.audioQueue.push(int16Buffer.buffer);
+      this.isClearQueue = true;
+      // 连接ws, 连接后服务器就绪会发送消息通知客户端
+      this.connect();
+    }
+  }
+  /**
+   * 清除音频队列
+   */
+  handleClearQueue() {
+    this.clearQueueTimer = setInterval(() => {
+      if (this.audioQueue.length > 0) {
+        console.log("【发送音频数据】", this.audioQueue.length);
+        this.ws.send(this.audioQueue.shift());
+      }
+    }, 0);
   }
 
   /**
@@ -320,20 +360,8 @@ class RTASRClient {
     if (this.ws) {
       // 发送结束标识
       this.sendEnd();
-
-      // 延迟关闭，确保结束标识发送成功
-      setTimeout(() => {
-        if (this.ws) {
-          if (this.ws.readyState === WebSocket.OPEN) {
-            this.ws.close(1000, "客户端正常关闭");
-          }
-          this.ws = null;
-          console.log("【连接关闭】WebSocket已安全关闭");
-        }
-      }, 500);
+      // 不需要客户端关闭，因为服务器会自动断开连接
     }
-
-    this.isConnected = false;
   }
 
   /**

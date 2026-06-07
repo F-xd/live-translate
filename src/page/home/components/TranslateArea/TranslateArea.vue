@@ -152,18 +152,18 @@ const handleConnectionClose = (code, reason) => {
     console.log('连接关闭:', code, reason);
 
     // 如果是意外断开，尝试重新连接
-    if (isStarted.value && code !== 1000) {
-        addMessage({
-            type: MESSAGE_TYPES.ERROR,
-            text: '连接异常断开，正在尝试重连...',
-            time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-        });
+    // if (isStarted.value && code !== 1000) {
+    //     addMessage({
+    //         type: MESSAGE_TYPES.ERROR,
+    //         text: '连接异常断开，正在尝试重连...',
+    //         time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    //     });
 
-        // 延迟重连
-        setTimeout(() => {
-            startRecognition();
-        }, 3000);
-    }
+    //     // 延迟重连
+    //     setTimeout(() => {
+    //         startRecognition();
+    //     }, 3000);
+    // }
 };
 
 // 处理连接打开
@@ -197,19 +197,8 @@ const startRecognition = async () => {
             });
             return;
         }
-
-        // 连接 WebSocket
-        await rtasrClient.connect();
-
-        // 等待连接建立后开始录音
-        setTimeout(async () => {
-            if (rtasrClient && rtasrClient.isConnected) {
-                await rtasrClient.startRecording();
-            }
-        }, 500);
-        setTimeout(async () => {
-            rtasrClient.sendEnd();
-        }, 5000);
+        // 开始录制音频
+        rtasrClient.startRecording();
 
     } catch (error) {
         console.error('开始识别失败:', error);
@@ -229,7 +218,6 @@ const stopRecognition = () => {
         rtasrClient = null;
     }
     isStarted.value = false;
-    currentTranscript.value = '';
 };
 
 // 开始/停止同声传译
