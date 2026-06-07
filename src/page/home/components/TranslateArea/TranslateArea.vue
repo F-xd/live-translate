@@ -19,36 +19,47 @@
 
         <!-- 操作区 -->
         <div class="operation">
-            <!-- 识别语言选择 -->
-            <!-- <div class="language-select">
-                <ElSelect v-model="sourceLanguage" placeholder="识别语言" size="large" :disabled="isStarted"
-                    class="lang-select">
-                    <ElOption v-for="lang in LANGUAGE_OPTIONS" :key="lang.code" :label="lang.label"
-                        :value="lang.code" />
-                </ElSelect>
-            </div> -->
+            <div class="operation-content">
+                <!-- 语言选择区域 -->
+                <div class="language-section">
+                    <div class="language-select-wrapper">
+                        <label class="language-label">识别语言</label>
+                        <ElSelect v-model="sourceLanguage" placeholder="识别语言" size="large" :disabled="isStarted"
+                            class="language-select">
+                            <ElOption v-for="lang in RECOGNITION_LANGUAGES" :key="lang.code" :label="lang.label"
+                                :value="lang.code" />
+                        </ElSelect>
+                    </div>
 
-            <!-- 箭头分隔 -->
-            <!-- <span class="arrow">→</span> -->
+                    <span class="arrow-icon">↔</span>
 
-            <!-- 翻译语言选择 -->
-            <p>翻译语言</p>
-            <div>
-                <ElSelect v-model="targetLanguage" placeholder="翻译语言" size="large" :disabled="isStarted" style="width:100px">
-                    <ElOption v-for="lang in LANGUAGE_OPTIONS" :key="lang.code" :label="lang.label"
-                        :value="lang.code" />
-                </ElSelect>
+                    <div class="language-select-wrapper">
+                        <label class="language-label">翻译语言</label>
+                        <ElSelect v-model="targetLanguage" placeholder="翻译语言" size="large" :disabled="isStarted"
+                            class="language-select">
+                            <ElOption v-for="lang in TRANSLATE_LANGUAGES" :key="lang.code" :label="lang.label"
+                                :value="lang.code" />
+                        </ElSelect>
+                    </div>
+                </div>
+
+                <!-- 控制按钮区域 -->
+                <div class="control-section">
+                    <div class="status-indicator" :class="{ active: isStarted }">
+                        <span class="status-dot"></span>
+                        <span class="status-text">{{ isStarted ? '正在识别' : '准备就绪' }}</span>
+                    </div>
+
+                    <ElButton type="primary" size="large" round class="start-button" :class="{ active: isStarted }"
+                        @click="handleStart" :disabled="!hasXFYUNConfig">
+                        <ElIcon size="28">
+                            <Microphone />
+                        </ElIcon>
+                        <span v-if="!isStarted">开始同声传译</span>
+                        <Waveform v-else />
+                    </ElButton>
+                </div>
             </div>
-
-            <!-- 开始按钮 -->
-            <ElButton type="primary" size="large" color="#2dd4bf" round @click="handleStart"
-                :disabled="!hasXFYUNConfig">
-                <ElIcon size="24">
-                    <Microphone />
-                </ElIcon>
-                <span v-if="!isStarted" style="font-size: 16px;">开始同声传译</span>
-                <Waveform v-else />
-            </ElButton>
         </div>
     </div>
 </template>
@@ -68,14 +79,28 @@ const hasXFYUNConfig = computed(() => {
     return XFYUN_CONFIG.appId && XFYUN_CONFIG.accessKeyId && XFYUN_CONFIG.accessKeySecret;
 });
 
-// 语言选项
-const LANGUAGE_OPTIONS = [
+// 识别语言选项（语音转写支持的语言）
+const RECOGNITION_LANGUAGES = [
+    { code: 'autodialect', label: '中英+方言' },
+];
+
+// 翻译语言选项（翻译API支持的语言）
+const TRANSLATE_LANGUAGES = [
     { code: 'cn', label: '中文' },
     { code: 'en', label: '英语' },
     { code: 'ja', label: '日语' },
     { code: 'ko', label: '韩语' },
     { code: 'fr', label: '法语' },
     { code: 'de', label: '德语' },
+    { code: 'es', label: '西班牙语' },
+    { code: 'ru', label: '俄语' },
+    { code: 'it', label: '意大利语' },
+    { code: 'pt', label: '葡萄牙语' },
+    { code: 'vi', label: '越南语' },
+    { code: 'th', label: '泰语' },
+    { code: 'ms', label: '马来语' },
+    { code: 'id', label: '印尼语' },
+    { code: 'ar', label: '阿拉伯语' },
 ];
 
 // 默认语言
@@ -291,40 +316,64 @@ const addMessage = (msg) => {
     max-width: 1000px;
     height: 100%;
     margin: 0 auto;
-    background: white;
-    border-radius: 6px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
     overflow: hidden;
+    border: 1px solid rgba(45, 212, 191, 0.1);
 
     .message-list {
         flex: 1;
         display: flex;
-        padding: 20px;
+        padding: 24px;
         overflow-y: auto;
         flex-direction: column;
-        gap: 16px;
+        gap: 20px;
+
+        &::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+
+            &:hover {
+                background: #94a3b8;
+            }
+        }
 
         .system-message {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 40px 20px;
-            color: #999;
+            padding: 60px 20px;
+            color: #64748b;
 
             .system-icon {
-                font-size: 48px;
-                margin-bottom: 12px;
+                font-size: 64px;
+                margin-bottom: 16px;
+                opacity: 0.6;
             }
 
             p {
                 margin: 0;
-                font-size: 14px;
+                font-size: 15px;
+                line-height: 1.6;
 
                 &.config-tip {
                     color: #f59e0b;
-                    margin-top: 8px;
-                    font-size: 12px;
+                    margin-top: 12px;
+                    font-size: 13px;
+                    padding: 8px 16px;
+                    background: rgba(245, 158, 11, 0.1);
+                    border-radius: 8px;
                 }
             }
         }
@@ -332,20 +381,190 @@ const addMessage = (msg) => {
 
     .operation {
         width: 100%;
-        height: 100px;
-        background: #c0e3f5;
-        border-radius: 0 0 6px 6px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-        gap: 12px;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 0 0 16px 16px;
+        padding: 20px 24px;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
 
-        .arrow {
-            font-size: 18px;
-            color: #666;
-            font-weight: bold;
+        .operation-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            // 自动换行
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto;
         }
+
+        .language-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+
+            .language-select-wrapper {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+
+                .language-label {
+                    font-size: 12px;
+                    color: #94a3b8;
+                    font-weight: 500;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+
+                .language-select {
+                    width: 140px;
+                    background: rgba(255, 255, 255, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 10px;
+
+                    :deep(.el-select__wrapper) {
+                        background: transparent;
+                        border: none;
+                    }
+
+                    :deep(.el-select__trigger) {
+                        color: #f1f5f9;
+                        border-radius: 10px;
+                        padding: 10px 12px;
+                        font-size: 14px;
+                        font-weight: 500;
+
+                        &:hover {
+                            background: rgba(255, 255, 255, 0.1);
+                        }
+                    }
+
+                    :deep(.el-select__placeholder) {
+                        color: #64748b;
+                    }
+
+                    :deep(.el-option) {
+                        background: #1e293b;
+                        color: #f1f5f9;
+
+                        &:hover {
+                            background: rgba(45, 212, 191, 0.2);
+                        }
+
+                        &.el-option-selected {
+                            background: rgba(45, 212, 191, 0.3);
+                            color: #2dd4bf;
+                        }
+                    }
+                }
+            }
+
+            .arrow-icon {
+                font-size: 20px;
+                color: #475569;
+                font-weight: 300;
+                padding: 0 8px;
+            }
+        }
+
+        .control-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+
+            .status-indicator {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 20px;
+                transition: all 0.3s ease;
+
+                .status-dot {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: #94a3b8;
+                    transition: all 0.3s ease;
+                }
+
+                .status-text {
+                    font-size: 13px;
+                    color: #94a3b8;
+                    font-weight: 500;
+                }
+
+                &.active {
+                    background: rgba(45, 212, 191, 0.15);
+
+                    .status-dot {
+                        background: #2dd4bf;
+                        box-shadow: 0 0 12px rgba(45, 212, 191, 0.6);
+                        animation: pulse 2s ease-in-out infinite;
+                    }
+
+                    .status-text {
+                        color: #2dd4bf;
+                    }
+                }
+            }
+
+            .start-button {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 14px 32px;
+                font-size: 16px;
+                font-weight: 600;
+                background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
+                border: none;
+                border-radius: 50px;
+                box-shadow: 0 4px 15px rgba(45, 212, 191, 0.4);
+                transition: all 0.3s ease;
+                color: #0f172a;
+
+                :deep(.el-icon) {
+                    color: #0f172a;
+                }
+
+                &:hover:not(:disabled) {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(45, 212, 191, 0.5);
+                }
+
+                &:active:not(:disabled) {
+                    transform: translateY(0);
+                }
+
+                &:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+
+                &.active {
+                    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+
+                    :deep(.el-icon) {
+                        color: #fff;
+                    }
+                }
+            }
+        }
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.6;
+        transform: scale(1.2);
     }
 }
 </style>
