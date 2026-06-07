@@ -20,21 +20,21 @@
         <!-- 操作区 -->
         <div class="operation">
             <!-- 识别语言选择 -->
-            <div class="language-select">
+            <!-- <div class="language-select">
                 <ElSelect v-model="sourceLanguage" placeholder="识别语言" size="large" :disabled="isStarted"
                     class="lang-select">
                     <ElOption v-for="lang in LANGUAGE_OPTIONS" :key="lang.code" :label="lang.label"
                         :value="lang.code" />
                 </ElSelect>
-            </div>
+            </div> -->
 
             <!-- 箭头分隔 -->
-            <span class="arrow">→</span>
+            <!-- <span class="arrow">→</span> -->
 
             <!-- 翻译语言选择 -->
-            <div class="language-select">
-                <ElSelect v-model="targetLanguage" placeholder="翻译语言" size="large" :disabled="isStarted"
-                    class="lang-select">
+            <p>翻译语言</p>
+            <div>
+                <ElSelect v-model="targetLanguage" placeholder="翻译语言" size="large" :disabled="isStarted" style="width:100px">
                     <ElOption v-for="lang in LANGUAGE_OPTIONS" :key="lang.code" :label="lang.label"
                         :value="lang.code" />
                 </ElSelect>
@@ -70,8 +70,6 @@ const hasXFYUNConfig = computed(() => {
 
 // 语言选项
 const LANGUAGE_OPTIONS = [
-    { code: 'autodialect', label: '中英+方言' },
-    { code: 'autominor', label: '37种语种' },
     { code: 'cn', label: '中文' },
     { code: 'en', label: '英语' },
     { code: 'ja', label: '日语' },

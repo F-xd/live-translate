@@ -275,7 +275,7 @@ class RTASRClient {
       this.audioQueue.push(int16Buffer.buffer);
     }
     // 静音阈值：RMS < 0.02 认为是静音
-    if (rms < 0.02) {
+    if (rms < 0.04) {
       // 启动静音计时器
       if (!this.muteTimer) {
         this.muteTimer = setTimeout(() => {
@@ -283,7 +283,7 @@ class RTASRClient {
           clearInterval(this.clearQueueTimer);
           this.sendEnd();
           this.isClearQueue = false;
-        }, 300);
+        }, 250);
       }
     } else {
       // 清除静音计时器
